@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<style>
+  *{
+    margin: 0px;
+    border: 0px;
+  }
+  #mouseControlsDiv{
+    color: white;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+  }
+</style>
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute  vec3 vPosition;
+uniform mat4 modelView;
+uniform mat4 projection;
+uniform bool drawingMesh;
+
+void main()
+{
+  float z = 0.0;
+  float x = vPosition.x;
+  float y = vPosition.y;
+  if(drawingMesh){
+    z = (x*x + y*y)*(x*x + y*y) - x*x - y*y;
+  }
+  else{
+    z = vPosition.z;
+  }
+
+  gl_Position = projection*modelView*vec4(vPosition.xy, z, 1.0);
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+uniform vec4 color;
+
+void
+main()
+{
+    gl_FragColor = color;
+}
+</script>
+
+<!-- axis shader -->
+<script id="axis-vertex-shader" type="x-shader/x-vertex">
+attribute vec3 axisVPosition;
+uniform mat4 axisModelView;
+uniform mat4 axisProjection;
+void main(){
+  gl_Position = axisVPosition;
+}
+</script>
+<script id="axis-fragment-shader" type="x-shader/x-vertex">
+precision mediump float;
+
+uniform vec4 color;
+
+void
+main()
+{
+    gl_FragColor = color;
+}
+</script>
+
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="initShaders.js"></script>
+<script type="text/javascript" src="MV.js"></script>
+<script type="text/javascript" src="main.js"></script>
+
+<body>
+<canvas id="gl-canvas" width="768" height="512">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+<div id="mouseControlsDiv">Click Screen For Mouse Controls</div>
+</body>
+</html>
