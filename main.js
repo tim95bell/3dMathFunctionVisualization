@@ -8,7 +8,8 @@ var RIGHT = 1;
 var BOTTOM = -1;
 var TOP = 1;
 
-var near = -1;
+// var near = -1;
+var near = 0.1;
 var far = 2;
 
 var fovy = 27.0;
@@ -25,34 +26,23 @@ var dPhi = 0;
 
 var mouseControls = false;
 
-// var eye = vec3(0.0, -75.0, 2.0);
-// var eye = vec3(0.0, -1.0, 3.0);//0.3);
-// var eye = vec3(0.0, -1.0, 1.0);
 var eye = vec3(0.0, -2.0, 0.0);
-
-
-// var at = vec3(0.0, 0.0, 2.0);
 var at = vec3(0.0, 0.0, 0.0);
-// var at = vec3(0.0, 0.0, 1.0);
-
 var up = vec3(0.0, 0.0, 1.0);
-// var up = vec3(0.0, 1.0, 0.0);
+
+// TODO: TEST
+var rotation = mat4();
 
 // mesh is from -1 to +1
 var vertices = [];
 var density = 30; // must be even
 var stripSize = (density+1)*2;
-// var numStrips = density/2;
 var numStrips = density;
 for(var y = 0; y < density; y += 1){
-  // var strip = [];
   var yTopPoint = y/(density/2) - 1;
   var yBottomPoint = (y+1)/(density/2) - 1;
   for(var x = 0; x < density+1; ++x){
     var xPoint = x/(density/2) - 1;
-    // strip.push( vec2(xPoint, yTopPoint) );
-    // strip.push( vec2(xPoint, yBottomPoint) );
-    // mesh.push(strip);
     vertices.push( vec3(xPoint, yTopPoint, 0) );
     vertices.push( vec3(xPoint, yBottomPoint, 0) );
   }
@@ -67,9 +57,7 @@ vertices.push( vec3(0,2,0) );
 vertices.push( vec3(0,0,-2) );
 vertices.push( vec3(0,0,2) );
 
-
 window.onload = function init() {
-
     canvas = document.getElementById( "gl-canvas" );
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
@@ -84,26 +72,13 @@ window.onload = function init() {
     gl.enable(gl.POLYGON_OFFSET_FILL);
     gl.polygonOffset(1.0, 2.0);
 
-    //
-    //  Load shaders and initialize attribute buffers
-    //
-    // var axisProgram = initShaders( gl, "axis-vertex-shader", "axis-fragment-shader" );
-    // gl.useProgram( axisProgram );
-
     var program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
 
     var vBuffer = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, vBuffer );
-    // gl.bufferData( gl.ARRAY_BUFFER, sizeof['vec2'] * density*density, gl.STATIC_DRAW);
-
-    // gl.bufferData( gl.ARRAY_BUFFER, sizeof['vec2'] * mesh.length, gl.STATIC_DRAW);
-    // gl.bufferSubData( gl.ARRAY_BUFFER, sizeof['vec2'] * mesh.length, flatten(mesh) );
 
     gl.bufferData( gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW );
-
-    // for(var i = 0; i < mesh.length; ++i)
-    //   gl.bufferSubData( gl.ARRAY_BUFFER, i*density*2, flatten(mesh[i]) );
 
     var vPosition = gl.getAttribLocation( program, "vPosition" );
     gl.vertexAttribPointer( vPosition, 3, gl.FLOAT, false, 0, 0 );
@@ -114,16 +89,8 @@ window.onload = function init() {
     colorLoc = gl.getUniformLocation( program, "color" );
     drawingMeshLoc = gl.getUniformLocation( program, "drawingMesh");
 
-
     var projection = ortho(LEFT, RIGHT, BOTTOM, TOP, near, far);
     gl.uniformMatrix4fv(projLoc, false, flatten(projection));
-
-
-    // modelview = mat4();
-    // modelview[0][0] = 0.5;
-    // modelview[1][1] = 0.5;
-    // modelview[2][2] = 0.5;
-    // gl.uniformMatrix4fv(mvLoc,false, flatten(modelview) );
 
     window.onkeydown = function(event) {
       if(mouseControls)
@@ -191,6 +158,11 @@ window.onload = function init() {
 }
 
 function calcRotation(){
+  if(phi > Math.PI*2)
+    phi -= Math.PI*2;
+  else if(phi < 0)
+    phi += Math.PI*2;
+
   var fowardV = subtract(at, eye);
   var fowardDirectionV = normalize(fowardV);
   var rightDirectionV = cross(fowardV, up);
@@ -201,28 +173,13 @@ function calcRotation(){
     Math.cos(phi)
   );
   eye = add(newAtFromEye, at);
-  var cameraAdd;
-  if(phi > Math.PI*2)
-  phi -= Math.PI*2;
-  else if(phi < 0)
-  phi += Math.PI*2;
-  if(phi < Math.PI)
-  cameraAdd = radians(90);
-  else
-  cameraAdd = -radians(90);
 
-  // up = vec3(
-  //   Math.sin(phi)*Math.cos(theta),
-  //   Math.sin(phi)*Math.sin(theta),
-  //   Math.cos(phi) + cameraAdd//radians(90)
-  // )
   var camPhi = phi+Math.PI/4;
   up = vec3(
     Math.sin(camPhi)*Math.cos(theta),
     Math.sin(camPhi)*Math.sin(theta),
-    Math.cos(camPhi)// + cameraAdd//radians(90)
+    Math.cos(camPhi)
   )
-
 }
 
 function constrain(lower, upper, val){
@@ -241,10 +198,8 @@ function update(){
   var maxSpeed = Math.PI/10;
   theta += dTheta;
   phi += dPhi;
-  // dTheta -= 0.1;
   dTheta *= 0.95;
   dTheta = constrain(-maxSpeed, maxSpeed, dTheta);
-  // dPhi -= 0.1;
   dPhi *= 0.95;
   dPhi = constrain(-maxSpeed, maxSpeed, dPhi);
   calcRotation();
@@ -259,7 +214,10 @@ function render() {
 
   worldview = lookAt(eye, at, up);
 
-  var modelTransform = scalem(0.4, 0.4, 0.4);
+  // var modelTransform = scalem(0.4, 0.4, 0.4);
+  // TODO: line below is test
+  rotation = mat4();
+  var modelTransform = mult( rotation, scalem(0.4, 0.4, 0.4) );
   worldview = mult(worldview, modelTransform);
   gl.uniformMatrix4fv(mvLoc, false, flatten(worldview));
 
