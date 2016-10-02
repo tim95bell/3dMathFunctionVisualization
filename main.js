@@ -24,14 +24,14 @@ var phi = 1;
 var dTheta = 0;
 var dPhi = 0;
 
+var radius = 2;
+
 var mouseControls = false;
 
-var eye = vec3(0.0, -2.0, 0.0);
-var at = vec3(0.0, 0.0, 0.0);
-var up = vec3(0.0, 0.0, 1.0);
-
-// TODO: TEST
-var rotation = mat4();
+// var eye = vec3(0.0, -2.0, 0.0);
+const at = vec3(0.0, 0.0, 0.0);
+// const up = vec3(0.0, 0.0, 1.0);
+const up = vec3(0.0, 1.0, 0.0);
 
 // mesh is from -1 to +1
 var vertices = [];
@@ -162,24 +162,28 @@ function calcRotation(){
     phi -= Math.PI*2;
   else if(phi < 0)
     phi += Math.PI*2;
+  if(theta > Math.PI*2)
+    theta -= Math.PI*2;
+  else if(phi < 0)
+    theta += Math.PI*2;
 
-  var fowardV = subtract(at, eye);
-  var fowardDirectionV = normalize(fowardV);
-  var rightDirectionV = cross(fowardV, up);
-
-  var newAtFromEye = vec3(
-    Math.sin(phi)*Math.cos(theta),
-    Math.sin(phi)*Math.sin(theta),
-    Math.cos(phi)
-  );
-  eye = add(newAtFromEye, at);
-
-  var camPhi = phi+Math.PI/4;
-  up = vec3(
-    Math.sin(camPhi)*Math.cos(theta),
-    Math.sin(camPhi)*Math.sin(theta),
-    Math.cos(camPhi)
-  )
+  // var fowardV = subtract(at, eye);
+  // var fowardDirectionV = normalize(fowardV);
+  // var rightDirectionV = cross(fowardV, up);
+  //
+  // var newAtFromEye = vec3(
+  //   Math.sin(phi)*Math.cos(theta),
+  //   Math.sin(phi)*Math.sin(theta),
+  //   Math.cos(phi)
+  // );
+  // eye = add(newAtFromEye, at);
+  //
+  // var camPhi = phi+Math.PI/4;
+  // up = vec3(
+  //   Math.sin(camPhi)*Math.cos(theta),
+  //   Math.sin(camPhi)*Math.sin(theta),
+  //   Math.cos(camPhi)
+  // )
 }
 
 function constrain(lower, upper, val){
@@ -202,7 +206,7 @@ function update(){
   dTheta = constrain(-maxSpeed, maxSpeed, dTheta);
   dPhi *= 0.95;
   dPhi = constrain(-maxSpeed, maxSpeed, dPhi);
-  calcRotation();
+  // calcRotation();
 }
 
 
@@ -212,12 +216,15 @@ function render() {
   if(mouseControls)
     update();
 
+  var eye = vec3(
+      radius*Math.sin(theta)*Math.cos(phi),
+      radius*Math.sin(theta)*Math.sin(phi),
+      radius*Math.cos(theta)
+  );
+
   worldview = lookAt(eye, at, up);
 
-  // var modelTransform = scalem(0.4, 0.4, 0.4);
-  // TODO: line below is test
-  rotation = mat4();
-  var modelTransform = mult( rotation, scalem(0.4, 0.4, 0.4) );
+  var modelTransform = scalem(0.4, 0.4, 0.4);
   worldview = mult(worldview, modelTransform);
   gl.uniformMatrix4fv(mvLoc, false, flatten(worldview));
 
